@@ -4,10 +4,10 @@ from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = "django-insecure-t0wb_%dfg)07m!c+x@w8-u3&i*6#&n@+$0yjgk#l9wle6pcz@v"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG')
+DEBUG = config('DEBUG',default = True)
 
 ALLOWED_HOSTS = []
 
@@ -94,7 +94,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -119,9 +119,10 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIME_ZONE = "Asia/Kolkata"
 
 CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ENABLE_UTC = False
 
 # Celery Beat
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.scheduler:DatabaseCheduler'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Email Settings
 
