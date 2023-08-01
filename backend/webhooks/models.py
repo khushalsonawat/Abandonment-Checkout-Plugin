@@ -18,3 +18,7 @@ class CheckoutReminderInfo(models.Model):
     second_reminder_sent = models.BooleanField(default = False, null = True)
     t3 = models.DurationField(default = datetime.timedelta(days = 3))
     third_reminder_sent = models.BooleanField(default = False, null = True)
+
+class ReminderMessages(models.Model):
+    message = models.TextField()
+    cart_id = models.CharField(max_length = 32)

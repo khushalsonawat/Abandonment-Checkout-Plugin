@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import creationOfCart,creationOfOrder,updationOfCart, schedule_reminder_mail
+from .views import creationOfCart,creationOfOrder,updationOfCart, schedule_reminder_mail, viewReminderMessages
 
 urlpatterns = [
     path('create_cart/',creationOfCart),
     path('update_cart/',updationOfCart),
     path('create_checkout/',creationOfOrder),
+    path('view_reminder_messages/',viewReminderMessages),
 ]

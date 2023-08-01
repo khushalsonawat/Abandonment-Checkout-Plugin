@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import status
-from .models import CartAndCheckoutInfo, CheckoutReminderInfo
+from .models import CartAndCheckoutInfo, CheckoutReminderInfo, ReminderMessages
 # from shops.models import Shops
 # import shopify
 # import requests
@@ -81,9 +81,11 @@ def updationOfCart(request):
         obj.cart_updation_time = payload['updated_at']
         cancel_scheduled_mails(obj)
         timings_object = CheckoutReminderInfo.objects.get(cart = obj)
+
         schedule_reminder_mail(obj, timings_object.t1)
         schedule_reminder_mail(obj, timings_object.t2)
         schedule_reminder_mail(obj, timings_object.t3)
+
         return Response(status=status.HTTP_202_ACCEPTED)
 
     return Response(status = status.HTTP_400_BAD_REQUEST)
@@ -94,14 +96,14 @@ def creationOfOrder(request):
     if verified:
         obj = CartAndCheckoutInfo.objects.get(payload['cart_id'])
         obj.order_created = True
-        cancel_scheduled_mails(obj)
+        message , was_reminder_sent = cancel_scheduled_mails(obj)
         return Response(status = status.HTTP_201_CREATED)
     return Response(status = status.HTTP_400_BAD_REQUEST)
 
 def schedule_reminder_mail(obj,schedule_time):
     time_obj = obj.updated_at or obj.created_at
     schedule1, created1 = CrontabSchedule.objects.get_or_create(
-        hour = (time_obj.hour + schedule_time.t1).hour, 
+        hour = (time_obj.hour + schedule_time.t1).hour,
         minute = (time_obj.minute + schedule_time.t1).minute
     )
     PeriodicTask.objects.create(
@@ -115,6 +117,16 @@ def schedule_reminder_mail(obj,schedule_time):
     return "Done"
 
 def cancel_scheduled_mails(obj):
+    total_mails_to_be_scheduled = 3
     for key in app.conf.beat_schedule.keys():
         if obj.cart_id in key:
             del app.conf.beat_schedule[key]
+            total_mails_to_be_scheduled -= 1
+
+    was_reminder_sent = total_mails_to_be_scheduled == 3
+
+    return "Cancelled all scheduled mails associated with cart id : {}".format(obj.cart_id) , was_reminder_sent
+
+def viewReminderMessages(request):
+    data = dict(ReminderMessages.objects.all())
+    return Response(data,status=status.HTTP_200_OK)
