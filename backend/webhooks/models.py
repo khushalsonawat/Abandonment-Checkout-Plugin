@@ -3,8 +3,8 @@ import datetime
 # Create your models here.
 
 class CartAndCheckoutInfo(models.Model):
-    cart_id = models.CharField(max_length = 32, primary_key = True)
-    cart_token = models.CharField(max_length = 32)
+    cart_id = models.CharField(max_length = 32)
+    cart_token = models.CharField(max_length = 32, primary_key = True)
     cart_created = models.BooleanField(default = False)
     cart_creation_time = models.DateTimeField(default = datetime.datetime.now())
     cart_updation_time = models.DateTimeField(null = True)
@@ -21,4 +21,4 @@ class CheckoutReminderInfo(models.Model):
 
 class ReminderMessages(models.Model):
     message = models.TextField()
-    cart_id = models.CharField(max_length = 32)
+    cart_token = models.CharField(max_length = 32)

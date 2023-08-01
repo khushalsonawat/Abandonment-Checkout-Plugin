@@ -4,6 +4,6 @@ from .views import creationOfCart,creationOfOrder,updationOfCart, schedule_remin
 urlpatterns = [
     path('create_cart/',creationOfCart),
     path('update_cart/',updationOfCart),
-    path('create_checkout/',creationOfOrder),
+    path('create_order/',creationOfOrder),
     path('view_reminder_messages/',viewReminderMessages),
 ]

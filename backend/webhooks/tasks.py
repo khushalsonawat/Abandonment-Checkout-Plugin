@@ -7,27 +7,27 @@ import json
 
 @shared_task(bind = True)
 def send_email(self,data):
-    cart_id = json.loads(data)["cart_id"]
-    obj = CheckoutReminderInfo.objects.get(cart_id = cart_id)
+    cart_token = data
+    obj = CheckoutReminderInfo.objects.get(cart_id = cart_token)
     message = ""
     if not obj.first_reminder_sent:
         obj.first_reminder_sent = True
-        message = "First reminder sent to for cart id {}".format(cart_id)
+        message = "First reminder sent to for cart id {}".format(cart_token)
     elif not obj.second_reminder_sent:
         obj.second_reminder_sent = True
-        message = "Second reminder sent to for cart id {}".format(cart_id)
+        message = "Second reminder sent to for cart id {}".format(cart_token)
     else:
         obj.third_reminder_sent = True
-        message = "Third reminder sent to for cart id {}".format(cart_id)
-    reminder_object = ReminderMessages.object.create(
-        cart_id = cart_id,
+        message = "Third reminder sent to for cart id {}".format(cart_token)
+    reminder_object = ReminderMessages.objects.create(
+        cart_token = cart_token,
         message = message
     )
     reminder_object.save()
 
     mail_subject = "Hi! Celery Testing"
     message = "Hooray! I made it work!"
-    to_email = "khushalsonawat@gmail.com"
+    to_email = "sonawat.1@iitj.ac.in"
     send_mail(
         subject = mail_subject,
         message = message,

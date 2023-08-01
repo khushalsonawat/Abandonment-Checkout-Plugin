@@ -12,6 +12,9 @@ from django_celery_beat.models import PeriodicTask, CrontabSchedule
 import datetime
 from backend.celery import app
 import json
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer
 
 # def create_session_object(request,shop):
 #     shopify.Session.setup(api_key = config('SHOPIFY_API_KEY'),secret = config('SHOPIFY_SECRET_KEY'))
@@ -45,12 +48,16 @@ def verify_webhook(data, hmac_header):
     computed_hmac = base64.b64encode(digest)
     return hmac.compare_digest(computed_hmac, hmac_header.encode('utf-8'))
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@csrf_exempt
 def creationOfCart(request):
     payload = request.body
     verified = verify_webhook(payload,request.headers.get('X-Shopify-Hmac-SHA256'))
 
     if verified:
-        datetime_object = datetime.strptime(payload['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        payload = json.loads(payload)
+        datetime_object = datetime.datetime.strptime(payload['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ")
         obj = CartAndCheckoutInfo.objects.create(
             cart_id = payload['id'],
             cart_token = payload['token'],
@@ -69,63 +76,73 @@ def creationOfCart(request):
         schedule_reminder_mail(obj, timings_object.t2)
         schedule_reminder_mail(obj, timings_object.t3)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response({"message":"Cart created. Reminder mails scheduled"},status=status.HTTP_201_CREATED)
 
-    return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response({"message":"Unverified webhook request"},status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@csrf_exempt
 def updationOfCart(request):
     payload = request.body
     verified = verify_webhook(payload,request.headers.get('X-Shopify-Hmac-SHA256'))
     if verified:
-        obj = CartAndCheckoutInfo.objects.get(cart_id = payload['id'])
-        obj.cart_updation_time = payload['updated_at']
+        payload = json.loads(payload)
+        obj = CartAndCheckoutInfo.objects.get(cart_token = payload['token'])
+        obj.cart_updation_time = datetime.datetime.strptime(payload['updated_at'], "%Y-%m-%dT%H:%M:%S.%fZ")
         cancel_scheduled_mails(obj)
-        timings_object = CheckoutReminderInfo.objects.get(cart = obj)
+        timings_object = CheckoutReminderInfo.objects.get(cart = obj.cart_token)
 
         schedule_reminder_mail(obj, timings_object.t1)
         schedule_reminder_mail(obj, timings_object.t2)
         schedule_reminder_mail(obj, timings_object.t3)
 
-        return Response(status=status.HTTP_202_ACCEPTED)
+        return Response({"message":"Cart updated. Reminder mails scheduled"},status=status.HTTP_202_ACCEPTED)
 
-    return Response(status = status.HTTP_400_BAD_REQUEST)
+    return Response({"message":"Unverified webhook request"},status = status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@csrf_exempt
 def creationOfOrder(request):
     payload = request.body
     verified = verify_webhook(payload,request.headers.get('X-Shopify-Hmac-SHA256'))
     if verified:
-        obj = CartAndCheckoutInfo.objects.get(payload['cart_id'])
+        payload = json.loads(payload)
+        payload['cart_token'] = "eeafa272cebfd4b22385bc4b645e762c"
+        obj = CartAndCheckoutInfo.objects.get(cart_token = payload['cart_token'])
         obj.order_created = True
         message , was_reminder_sent = cancel_scheduled_mails(obj)
-        return Response(status = status.HTTP_201_CREATED)
-    return Response(status = status.HTTP_400_BAD_REQUEST)
+        return Response({"message":message,"was_reminder_sent":was_reminder_sent}, status = status.HTTP_201_CREATED)
+    return Response({"message":"Unverified webhook request"},status = status.HTTP_400_BAD_REQUEST)
 
 def schedule_reminder_mail(obj,schedule_time):
-    time_obj = obj.updated_at or obj.created_at
+    time_obj = obj.cart_updation_time or obj.cart_creation_time
     schedule1, created1 = CrontabSchedule.objects.get_or_create(
-        hour = (time_obj.hour + schedule_time.t1).hour,
-        minute = (time_obj.minute + schedule_time.t1).minute
+        hour = (time_obj + schedule_time).hour,
+        minute = (time_obj + schedule_time).minute
     )
     PeriodicTask.objects.create(
         crontab = schedule1,
         task = "webhooks.tasks.send_email",
-        name = obj.cart_id +"-"+ str(schedule_time.t1),
-        args = json.dumps({"cart_id" : obj.cart_id}),
+        name = obj.cart_token + "-" + str(time_obj) + str(schedule_time),
+        args = json.dumps((obj.cart_token,)),
         one_off = True,
-        expires = datetime.datetime.now() + schedule_time.t1
+        expires = datetime.datetime.now() + schedule_time
     )
     return "Done"
 
 def cancel_scheduled_mails(obj):
     total_mails_to_be_scheduled = 3
     for key in app.conf.beat_schedule.keys():
-        if obj.cart_id in key:
+        if obj.cart_token in key:
             del app.conf.beat_schedule[key]
             total_mails_to_be_scheduled -= 1
 
     was_reminder_sent = total_mails_to_be_scheduled == 3
 
-    return "Cancelled all scheduled mails associated with cart id : {}".format(obj.cart_id) , was_reminder_sent
+    return "Cancelled all scheduled mails associated with cart token : {}".format(obj.cart_token) , was_reminder_sent
 
 def viewReminderMessages(request):
     data = dict(ReminderMessages.objects.all())

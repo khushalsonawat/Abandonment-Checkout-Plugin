@@ -9,7 +9,17 @@ SECRET_KEY = "django-insecure-t0wb_%dfg)07m!c+x@w8-u3&i*6#&n@+$0yjgk#l9wle6pcz@v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG',default = True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    config("APP_URL"),
+    "127.0.0.1",
+    "localhost",
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CORS_ORIGIN_WHITELIST = [
+    'https://' + config('APP_URL'),
+]
 
 
 # Application definition
