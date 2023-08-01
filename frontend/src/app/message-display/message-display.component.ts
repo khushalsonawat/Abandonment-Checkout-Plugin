@@ -1,5 +1,6 @@
 import { Component, OnInit} from '@angular/core';
 import { GenericService } from '../services/generic.service';
+import { messageInfo } from './message';
 
 @Component({
   selector: 'app-message-display',
@@ -8,14 +9,21 @@ import { GenericService } from '../services/generic.service';
   providers: [GenericService]
 })
 export class MessageDisplayComponent implements OnInit {
-    message : string;
-    cart_id : string;
+    listOfMessages : Array<messageInfo>;
+    displayedColumns: string[] = ['S.No.', 'Message' , 'Cart Token' ];
 
     constructor(
         private serviceObject:GenericService
     ){ }
 
     ngOnInit(): void {
-        
+        this.serviceObject.getData().subscribe({
+            next:(data) => {
+              this.listOfMessages = data;
+            },
+            error: (err) => {
+              console.log(err);
+            }
+        });
     }
 }

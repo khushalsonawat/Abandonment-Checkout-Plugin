@@ -7,4 +7,10 @@ import { HOST } from '../constant';
 })
 export class GenericService {
     constructor(private http: HttpClient) { }
+
+    getData(){
+        return this.http.get<any>(
+          HOST + 'api/view_reminder_messages/'
+        )
+    }
 }

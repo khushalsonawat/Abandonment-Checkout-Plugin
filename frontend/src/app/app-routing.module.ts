@@ -1,7 +1,10 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { MessageDisplayComponent } from './message-display/message-display.component';
 
-const routes: Routes = [];
+const routes: Routes = [
+    {path:'',component: MessageDisplayComponent},
+];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
