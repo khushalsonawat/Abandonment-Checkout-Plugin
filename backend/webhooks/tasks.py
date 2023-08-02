@@ -26,13 +26,15 @@ def send_email(self,data,email):
         reminder_object.save()
 
         mail_subject = "Hey there! Don't forget to checkout the items in your cart!"
-        message = render_to_string("mail-body.html")
+        message = "Have a look at them"
+        mail_html = render_to_string("main-body.html")
         to_email = "sonawat.1@iitj.ac.in"
         send_mail(
             subject = mail_subject,
             message = message,
             from_email = settings.EMAIL_HOST_USER,
             recipient_list = [to_email],
+            html_message = mail_html
         )
         return "Done"
     return "No Email id"
